@@ -79,6 +79,7 @@ if __name__ == '__main__':
         learner.teach(data['X_val'][query_idxs], data['y_val'][query_idxs])
 
         delete_idx(data, query_idxs)
+        print(f'{data["X_val"].shape} samples left in pool')
 
 
 
