@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+
 def normalize(data, reverse=False):
     if reverse:
         return data * 78. + 33.
@@ -76,7 +77,8 @@ if __name__ == '__main__':
 
         # print performance
         performance = learner.score(data['X_test'], data['y_test'])
-        print(f'performance is {performance:8.3f} '
+        print(f'Step {num_step:5.0f}/{num_steps:5.0f} '
+              f'performance is {performance:8.3f} '
               f'and {data["X_val"].shape} samples left in pool'
               f'in {time.time() - t1:8.5f} seconds')
         t1 = time.time()
