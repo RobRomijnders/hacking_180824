@@ -98,8 +98,8 @@ def main():
 
         # print performance
         performance = learner.score(data['X_test'], data['y_test'])
-        logger.debug(f'Step {num_step:5.0f}/{num_steps:5.0f} '
-              f'performance is {performance:8.3f} '
+        logger.debug(f'--- STEP {num_step:5.0f} ---'
+              f'PERFORMANCE {performance:8.3f} ---'
               f'and {data["X_val"].shape} samples left in pool'
               f'in {time.time() - t1:8.5f} seconds')
         t1 = time.time()
