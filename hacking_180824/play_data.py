@@ -6,8 +6,13 @@ import logging
 from os.path import join
 import datetime
 from hacking_180824.util.utils import random_sampling
+from modAL.models import ActiveLearner
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from modAL.uncertainty import entropy_sampling
 
-log_dir = '/home/rob/Dropbox/ml_projects/hacking_180824/hacking_180824/log'
+log_dir = 'log'
 log_file_name = join(log_dir, datetime.datetime.now().isoformat() + '.txt')
 
 logger = logging.getLogger('hello')
@@ -36,7 +41,7 @@ def load_mnist():
     Load the MNIST data set
     :return:
     """
-    mndata = MNIST('/home/rob/Dropbox/ml_projects/weight_uncertainty/weight_uncertainty/data/mnist')
+    mndata = MNIST('data/mnist')
     data = {}
 
     # train data
@@ -71,15 +76,10 @@ def delete_idx(data, queries):
     data['X_val'] = np.delete(data['X_val'], queries, axis=0)
     data['y_val'] = np.delete(data['y_val'], queries, axis=0)
 
-
-if __name__ == '__main__':
+def main():
     data = load_mnist()
 
-    from modAL.models import ActiveLearner
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.neural_network import MLPClassifier
-    from modAL.uncertainty import entropy_sampling
+
 
     # initializing the learner
     estimator = LogisticRegression(n_jobs=8, tol=1E-3)
@@ -112,7 +112,12 @@ if __name__ == '__main__':
 
         performances.append((num_step, performance))
 
-    performances = np.array(performances)
+    return np.array(performances)
+
+
+if __name__ == '__main__':
+
+    performances = main()
 
     f = plt.figure()
     plt.plot(performances[:, 0], performances[:, 1])
