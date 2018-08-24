@@ -1,5 +1,7 @@
 from mnist import MNIST
 import numpy as np
+import matplotlib.pyplot as plt
+import time
 
 def normalize(data, reverse=False):
     if reverse:
@@ -49,7 +51,6 @@ def delete_idx(data, queries):
     data['y_val'] = np.delete(data['y_val'], queries, axis=0)
 
 
-
 if __name__ == '__main__':
     data = load_mnist()
     print(data['X_train'].shape)
@@ -66,20 +67,33 @@ if __name__ == '__main__':
         query_strategy=entropy_sampling
     )
 
-    for _ in range(10000):
+    performances = []
+    num_steps = 10
+    t1 = time.time()
+    for num_step in range(num_steps):
         # query for labels
-        query_idx, query_inst = learner.query(data['X_val'])
         query_idxs, query_insts = learner.query(data['X_val'], n_instances=200)
 
         # print performance
         performance = learner.score(data['X_test'], data['y_test'])
-        print(f'Query index is {int(query_idx):8.0f} and performance is {performance:8.3f}')
+        print(f'performance is {performance:8.3f} '
+              f'and {data["X_val"].shape} samples left in pool'
+              f'in {time.time() - t1:8.5f} seconds')
+        t1 = time.time()
 
         # supply label for queried instance
         learner.teach(data['X_val'][query_idxs], data['y_val'][query_idxs])
 
         delete_idx(data, query_idxs)
-        print(f'{data["X_val"].shape} samples left in pool')
+
+        performances.append((num_step, performance))
+
+    performances = np.array(performances)
+
+    f = plt.figure()
+    plt.plot(performances[:, 0], performances[:, 1])
+    plt.show()
+    plt.waitforbuttonpress()
 
 
 
