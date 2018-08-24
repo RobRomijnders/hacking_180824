@@ -5,6 +5,7 @@ import time
 import logging
 from os.path import join
 import datetime
+from hacking_180824.util.utils import random_sampling
 
 log_dir = '/home/rob/Dropbox/ml_projects/hacking_180824/hacking_180824/log'
 log_file_name = join(log_dir, datetime.datetime.now().isoformat() + '.txt')
@@ -62,7 +63,7 @@ def load_mnist():
     data['X_test'] = images
     data['y_test'] = labels
 
-    print(f'train set {data["X_train"].shape[0]} - val set {data["X_val"].shape[0]} - test set {data["X_test"].shape[0]}')
+    logger.debug(f'train set {data["X_train"].shape[0]} - val set {data["X_val"].shape[0]} - test set {data["X_test"].shape[0]}')
     return data
 
 
@@ -73,16 +74,18 @@ def delete_idx(data, queries):
 
 if __name__ == '__main__':
     data = load_mnist()
-    print(data['X_train'].shape)
 
     from modAL.models import ActiveLearner
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.linear_model import LogisticRegression
+    from sklearn.neural_network import MLPClassifier
     from modAL.uncertainty import entropy_sampling
 
     # initializing the learner
+    estimator = LogisticRegression(n_jobs=8, tol=1E-3)
+    estimator = MLPClassifier(hidden_layer_sizes=(30,), activation='tanh')
     learner = ActiveLearner(
-        estimator=LogisticRegression(),
+        estimator=estimator,
         X_training=data['X_train'], y_training=data['y_train'],
         query_strategy=entropy_sampling
     )
