@@ -10,14 +10,14 @@ for num_file, filename in enumerate(glob('log/*.log')):
         policy_name = 'unknown'
         for line in f:
             if 'policyname' in line:
-                policy_name = line.split('---')[-1]
-                print(policy_name)
+                policy_name = line.split('---')[-1].strip()
             if 'INFO' in line:
-                elements = line.split('---')
-                step = int(elements[-2])
-                performance = float(elements[-1])
+                if 'PERFORMANCE' in line:
+                    elements = line.split('---')
+                    step = int(elements[-2])
+                    performance = float(elements[-1])
 
-                performances.append((step, performance))
+                    performances.append((step, performance))
 
     performances = np.array(performances)
 

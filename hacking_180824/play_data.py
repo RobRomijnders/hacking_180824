@@ -89,28 +89,33 @@ def main():
         query_strategy=random_sampling
     )
 
+    # Tell here what the name of your policy is
     logger.debug('policyname --- random')
 
     performances = []
-    num_steps = 5
+    num_steps = 5  # Number of steps in the active learning  loop
     t1 = time.time()
     for num_step in range(num_steps):
         # query for labels
         query_idxs, query_insts = learner.query(data['X_val'], n_instances=200)
 
-        # print performance
+        # Get global performance
         performance = learner.score(data['X_test'], data['y_test'])
         logger.debug(f'--- STEP {num_step:5.0f} ---'
               f'PERFORMANCE {performance:8.3f} ---'
               f'and {data["X_val"].shape} samples left in pool'
               f'in {time.time() - t1:8.5f} seconds')
 
-        logger.info(f'---{num_step:10.0f}---{performance:10.3f}')
+        # Log global performance
+        logger.info(f'PERFORMANCE ---{num_step:10.0f}---{performance:10.3f}')
         t1 = time.time()
 
-        # supply label for queried instance
+        # Get per class performance
+
+        # Teach the learner with new labels
         learner.teach(data['X_val'][query_idxs], data['y_val'][query_idxs])
 
+        # Delete
         delete_idx(data, query_idxs)
 
         performances.append((num_step, performance))
@@ -119,15 +124,8 @@ def main():
 
 
 if __name__ == '__main__':
-
     performances = main()
 
-    # f = plt.figure()
-    # plt.plot(performances[:, 0], performances[:, 1])
-    # plt.xlabel('Time step')
-    # plt.ylabel('Performance metric')
-    # plt.show()
-    # plt.waitforbuttonpress()
 
 
 
