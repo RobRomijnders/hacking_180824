@@ -11,6 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from modAL.uncertainty import entropy_sampling
+from sklearn.metrics import confusion_matrix
 
 log_dir = 'log'
 log_file_name = join(log_dir, datetime.datetime.now().isoformat() + '.log')
@@ -86,11 +87,11 @@ def main():
     learner = ActiveLearner(
         estimator=estimator,
         X_training=data['X_train'], y_training=data['y_train'],
-        query_strategy=random_sampling
+        query_strategy=rob_sampler
     )
 
     # Tell here what the name of your policy is
-    logger.debug('policyname --- random')
+    logger.debug('policyname --- robsampler')
 
     performances = []
     num_steps = 5  # Number of steps in the active learning  loop
@@ -111,9 +112,16 @@ def main():
         t1 = time.time()
 
         # Get per class performance
+        y_test_pred = learner.predict(data['X_test'])
+        C = confusion_matrix(data['y_test'], y_test_pred)
+        per_class_accuracy = np.diag(C) / np.sum(C, axis=0)
+
+        # Log the per class performance
+        logger.info(f'PERCLASS ---{num_step:10.0f}--- ' + '--'.join((f'{float(p):.3f}' for p in per_class_accuracy)))
 
         # Teach the learner with new labels
         learner.teach(data['X_val'][query_idxs], data['y_val'][query_idxs])
+
 
         # Delete
         delete_idx(data, query_idxs)
