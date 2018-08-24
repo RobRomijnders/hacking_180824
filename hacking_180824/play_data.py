@@ -13,7 +13,7 @@ from sklearn.neural_network import MLPClassifier
 from modAL.uncertainty import entropy_sampling
 
 log_dir = 'log'
-log_file_name = join(log_dir, datetime.datetime.now().isoformat() + '.txt')
+log_file_name = join(log_dir, datetime.datetime.now().isoformat() + '.log')
 
 logger = logging.getLogger('hello')
 logger.setLevel(logging.DEBUG)
@@ -86,11 +86,13 @@ def main():
     learner = ActiveLearner(
         estimator=estimator,
         X_training=data['X_train'], y_training=data['y_train'],
-        query_strategy=rob_sampler
+        query_strategy=random_sampling
     )
 
+    logger.debug('policyname --- random')
+
     performances = []
-    num_steps = 10
+    num_steps = 5
     t1 = time.time()
     for num_step in range(num_steps):
         # query for labels
@@ -102,6 +104,8 @@ def main():
               f'PERFORMANCE {performance:8.3f} ---'
               f'and {data["X_val"].shape} samples left in pool'
               f'in {time.time() - t1:8.5f} seconds')
+
+        logger.info(f'---{num_step:10.0f}---{performance:10.3f}')
         t1 = time.time()
 
         # supply label for queried instance
@@ -118,12 +122,12 @@ if __name__ == '__main__':
 
     performances = main()
 
-    f = plt.figure()
-    plt.plot(performances[:, 0], performances[:, 1])
-    plt.xlabel('Time step')
-    plt.ylabel('Performance metric')
-    plt.show()
-    plt.waitforbuttonpress()
+    # f = plt.figure()
+    # plt.plot(performances[:, 0], performances[:, 1])
+    # plt.xlabel('Time step')
+    # plt.ylabel('Performance metric')
+    # plt.show()
+    # plt.waitforbuttonpress()
 
 
 
