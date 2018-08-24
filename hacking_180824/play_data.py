@@ -10,7 +10,7 @@ from modAL.models import ActiveLearner
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-from modAL.uncertainty import entropy_sampling
+from modAL.uncertainty import entropy_sampling, margin_sampling, uncertainty_sampling
 from sklearn.metrics import confusion_matrix
 
 log_dir = 'log'
