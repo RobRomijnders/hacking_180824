@@ -5,6 +5,7 @@ import numpy as np
 f, axarr = plt.subplots(2, 2)
 colors = ['r', 'b', 'm', 'y', 'k', 'g', 'r']
 
+# Another set of sublots for the per class counts and accuracies
 f_c, axarr_c = plt.subplots(1, 10)
 
 for num_file, filename in enumerate(glob('log/*.log')):
@@ -14,6 +15,7 @@ for num_file, filename in enumerate(glob('log/*.log')):
     with open(filename) as f:
         policy_name = 'unknown'
         for line in f:
+            # loop over all the lines and use the data for the respective plots
             if 'policyname' in line:
                 policy_name = line.split('---')[-1].strip()
             if 'INFO' in line:
@@ -40,6 +42,7 @@ for num_file, filename in enumerate(glob('log/*.log')):
     perclass_performances = np.array(perclass_performances)
     counts_total = np.array(counts_total)
 
+    # Lots of pyplot magic
     axarr[0, 0].plot(performances[:, 0], performances[:, 1], label=policy_name, c=colors[num_file])
     axarr[0, 0].set_xlabel('time')
     axarr[0, 0].set_ylabel('performance')
