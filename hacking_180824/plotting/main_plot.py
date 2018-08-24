@@ -31,6 +31,8 @@ for num_file, filename in enumerate(glob('log/*.log')):
     perclass_performances = np.array(perclass_performances)
 
     axarr[0, 0].plot(performances[:, 0], performances[:, 1], label=policy_name, c=colors[num_file])
+    axarr[0, 0].set_xlabel('time')
+    axarr[0, 0].set_ylabel('performance')
     axarr[0, 1].plot(perclass_performances[:, 0], perclass_performances[:, 1:], c=colors[num_file], label=policy_name)
 axarr[0, 0].legend()
 axarr[0, 1].legend()
