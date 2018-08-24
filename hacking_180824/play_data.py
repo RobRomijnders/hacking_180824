@@ -5,7 +5,7 @@ import time
 import logging
 from os.path import join
 import datetime
-from hacking_180824.util.utils import random_sampling
+from hacking_180824.util.utils import random_sampling, rob_sampler
 from modAL.models import ActiveLearner
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -76,10 +76,9 @@ def delete_idx(data, queries):
     data['X_val'] = np.delete(data['X_val'], queries, axis=0)
     data['y_val'] = np.delete(data['y_val'], queries, axis=0)
 
+
 def main():
     data = load_mnist()
-
-
 
     # initializing the learner
     estimator = LogisticRegression(n_jobs=8, tol=1E-3)
@@ -87,7 +86,7 @@ def main():
     learner = ActiveLearner(
         estimator=estimator,
         X_training=data['X_train'], y_training=data['y_train'],
-        query_strategy=entropy_sampling
+        query_strategy=rob_sampler
     )
 
     performances = []
