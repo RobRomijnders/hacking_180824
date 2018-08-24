@@ -5,7 +5,7 @@ import time
 import logging
 from os.path import join
 import datetime
-from hacking_180824.util.utils import random_sampling, rob_sampler
+from hacking_180824.util.utils import random_sampling, rob_sampler, jetze_sampler
 from modAL.models import ActiveLearner
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -31,6 +31,12 @@ logger.addHandler(ch)
 
 
 def normalize(data, reverse=False):
+    """
+    hardcoded normalization for mnist
+    :param data:
+    :param reverse:
+    :return:
+    """
     if reverse:
         return data * 78. + 33.
     else:
@@ -53,13 +59,19 @@ def load_mnist():
     # Split the train data into a train and val set
     N = images.shape[0]
     ratio = int(0.001 * N)
-    ind = np.random.permutation(N)
 
-    data['X_train'] = images[ind[:ratio]]
-    data['y_train'] = labels[ind[:ratio]]
+    # In case of biased sampling based on the labels, so that higher labels get sampled more often
+    # sampling_weights = 2**labels/np.sum(2**labels)
+    # biased_samples = np.random.choice(range(len(labels)), size=ratio, p=sampling_weights, replace=False)
 
-    data['X_val'] = images[ind[ratio:]]
-    data['y_val'] = labels[ind[ratio:]]
+    # In case of sampling only labels lower than 4
+    biased_samples = np.random.choice(np.where(labels < 4)[0], size=ratio, replace=False)
+
+    data['X_train'] = images[biased_samples]
+    data['y_train'] = labels[biased_samples]
+
+    data['X_val'] = images[np.delete(np.arange(N), biased_samples)]
+    data['y_val'] = labels[np.delete(np.arange(N), biased_samples)]
 
     # test data
     images, labels = mndata.load_testing()
@@ -81,24 +93,27 @@ def delete_idx(data, queries):
 def main():
     data = load_mnist()
 
-    # initializing the learner
+    # Keep track of the number of instances per class
+    counts_cum = np.array([np.sum(data['y_train'] == num) for num in range(10)])
+
+    # Initializing the learner
+    # simple use sklearn estimators
     estimator = LogisticRegression(n_jobs=8, tol=1E-3)
-    estimator = MLPClassifier(hidden_layer_sizes=(30,), activation='tanh')
+    # estimator = MLPClassifier(hidden_layer_sizes=(30,), activation='tanh')
     learner = ActiveLearner(
         estimator=estimator,
         X_training=data['X_train'], y_training=data['y_train'],
-        query_strategy=margin_sampling
+        query_strategy=jetze_sampler
     )
 
     # Tell here what the name of your policy is
-    logger.debug('policyname --- margin_sampling_u')
+    logger.debug('policyname --- jetze_sampler_4')
 
-    performances = []
     num_steps = 20  # Number of steps in the active learning  loop
     t1 = time.time()
     for num_step in range(num_steps):
         # query for labels
-        query_idxs, query_insts = learner.query(data['X_val'], n_instances=50)
+        query_idxs, query_insts = learner.query(data['X_val'], n_instances=20)
 
         # Get global performance
         performance = learner.score(data['X_test'], data['y_test'])
@@ -114,25 +129,27 @@ def main():
         # Get per class performance
         y_test_pred = learner.predict(data['X_test'])
         C = confusion_matrix(data['y_test'], y_test_pred)
-        per_class_accuracy = np.diag(C) / np.sum(C, axis=0)
+        per_class_accuracy = np.diag(C) / (np.sum(C, axis=0) + 1E-9)  # Add small number to avoid numerical error
 
         # Log the per class performance
         logger.info(f'PERCLASS ---{num_step:10.0f}--- ' + '--'.join((f'{float(p):.3f}' for p in per_class_accuracy)))
 
+        # Get the per class counts
+        counts = [np.sum(data['y_val'][query_idxs] == num) for num in range(10)]
+        counts_cum += np.array(counts)
+
+        # Log the per class counts
+        logger.info(f'COUNTS ---{num_step:10.0f}---' + '--'.join([str(int(c)) for c in counts_cum]))
+
         # Teach the learner with new labels
         learner.teach(data['X_val'][query_idxs], data['y_val'][query_idxs])
 
-
-        # Delete
+        # Delete the queried data as they are ingested already by the learner
         delete_idx(data, query_idxs)
-
-        performances.append((num_step, performance))
-
-    return np.array(performances)
 
 
 if __name__ == '__main__':
-    performances = main()
+   main()
 
 
 
