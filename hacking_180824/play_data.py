@@ -23,7 +23,7 @@ def load_mnist():
 
     # Split the train data into a train and val set
     N = images.shape[0]
-    ratio = int(0.01 * N)
+    ratio = int(0.001 * N)
     ind = np.random.permutation(N)
 
     data['X_train'] = images[ind[:ratio]]
@@ -44,16 +44,24 @@ def load_mnist():
     return data
 
 
+def delete_idx(data, queries):
+    data['X_val'] = np.delete(data['X_val'], queries, axis=0)
+    data['y_val'] = np.delete(data['y_val'], queries, axis=0)
+
+
+
 if __name__ == '__main__':
     data = load_mnist()
+    print(data['X_train'].shape)
 
     from modAL.models import ActiveLearner
     from sklearn.ensemble import RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
     from modAL.uncertainty import entropy_sampling
 
     # initializing the learner
     learner = ActiveLearner(
-        estimator=RandomForestClassifier(),
+        estimator=LogisticRegression(),
         X_training=data['X_train'], y_training=data['y_train'],
         query_strategy=entropy_sampling
     )
@@ -61,13 +69,16 @@ if __name__ == '__main__':
     for _ in range(10000):
         # query for labels
         query_idx, query_inst = learner.query(data['X_val'])
+        query_idxs, query_insts = learner.query(data['X_val'], n_instances=200)
 
-        # ...obtaining new labels from the Oracle...
-
-        # supply label for queried instance
-        learner.teach(data['X_val'][query_idx], data['y_val'][query_idx])
-
-        # print performance after query
+        # print performance
         performance = learner.score(data['X_test'], data['y_test'])
         print(f'Query index is {int(query_idx):8.0f} and performance is {performance:8.3f}')
+
+        # supply label for queried instance
+        learner.teach(data['X_val'][query_idxs], data['y_val'][query_idxs])
+
+        delete_idx(data, query_idxs)
+
+
 
