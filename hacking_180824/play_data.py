@@ -2,6 +2,25 @@ from mnist import MNIST
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import logging
+from os.path import join
+import datetime
+
+log_dir = '/home/rob/Dropbox/ml_projects/hacking_180824/hacking_180824/log'
+log_file_name = join(log_dir, datetime.datetime.now().isoformat() + '.txt')
+
+logger = logging.getLogger('hello')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler(log_file_name)
+fh.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 
 def normalize(data, reverse=False):
@@ -77,7 +96,7 @@ if __name__ == '__main__':
 
         # print performance
         performance = learner.score(data['X_test'], data['y_test'])
-        print(f'Step {num_step:5.0f}/{num_steps:5.0f} '
+        logger.debug(f'Step {num_step:5.0f}/{num_steps:5.0f} '
               f'performance is {performance:8.3f} '
               f'and {data["X_val"].shape} samples left in pool'
               f'in {time.time() - t1:8.5f} seconds')
@@ -94,6 +113,8 @@ if __name__ == '__main__':
 
     f = plt.figure()
     plt.plot(performances[:, 0], performances[:, 1])
+    plt.xlabel('Time step')
+    plt.ylabel('Performance metric')
     plt.show()
     plt.waitforbuttonpress()
 
