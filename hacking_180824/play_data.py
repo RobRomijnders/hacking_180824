@@ -1,5 +1,27 @@
 from mnist import MNIST
 import numpy as np
+import matplotlib.pyplot as plt
+import time
+import logging
+from os.path import join
+import datetime
+
+log_dir = '/home/rob/Dropbox/ml_projects/hacking_180824/hacking_180824/log'
+log_file_name = join(log_dir, datetime.datetime.now().isoformat() + '.txt')
+
+logger = logging.getLogger('hello')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler(log_file_name)
+fh.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
+
 
 def normalize(data, reverse=False):
     if reverse:
@@ -49,7 +71,6 @@ def delete_idx(data, queries):
     data['y_val'] = np.delete(data['y_val'], queries, axis=0)
 
 
-
 if __name__ == '__main__':
     data = load_mnist()
     print(data['X_train'].shape)
@@ -66,19 +87,36 @@ if __name__ == '__main__':
         query_strategy=entropy_sampling
     )
 
-    for _ in range(10000):
+    performances = []
+    num_steps = 10
+    t1 = time.time()
+    for num_step in range(num_steps):
         # query for labels
-        query_idx, query_inst = learner.query(data['X_val'])
         query_idxs, query_insts = learner.query(data['X_val'], n_instances=200)
 
         # print performance
         performance = learner.score(data['X_test'], data['y_test'])
-        print(f'Query index is {int(query_idx):8.0f} and performance is {performance:8.3f}')
+        logger.debug(f'Step {num_step:5.0f}/{num_steps:5.0f} '
+              f'performance is {performance:8.3f} '
+              f'and {data["X_val"].shape} samples left in pool'
+              f'in {time.time() - t1:8.5f} seconds')
+        t1 = time.time()
 
         # supply label for queried instance
         learner.teach(data['X_val'][query_idxs], data['y_val'][query_idxs])
 
         delete_idx(data, query_idxs)
+
+        performances.append((num_step, performance))
+
+    performances = np.array(performances)
+
+    f = plt.figure()
+    plt.plot(performances[:, 0], performances[:, 1])
+    plt.xlabel('Time step')
+    plt.ylabel('Performance metric')
+    plt.show()
+    plt.waitforbuttonpress()
 
 
 
