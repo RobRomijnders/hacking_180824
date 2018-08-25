@@ -10,7 +10,7 @@ from modAL.models import ActiveLearner
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-from modAL.uncertainty import entropy_sampling, uncertainty_sampling, margin_sampling
+from modAL.uncertainty import entropy_sampling, margin_sampling, uncertainty_sampling
 from sklearn.metrics import confusion_matrix
 
 log_dir = 'log'
@@ -87,18 +87,18 @@ def main():
     learner = ActiveLearner(
         estimator=estimator,
         X_training=data['X_train'], y_training=data['y_train'],
-        query_strategy=margin_sampling
+        query_strategy=rob_sampler
     )
 
     # Tell here what the name of your policy is
-    logger.debug('policyname --- margin_sampling_u')
+    logger.debug('policyname --- robsampler')
 
     performances = []
-    num_steps = 20  # Number of steps in the active learning  loop
+    num_steps = 5  # Number of steps in the active learning  loop
     t1 = time.time()
     for num_step in range(num_steps):
         # query for labels
-        query_idxs, query_insts = learner.query(data['X_val'], n_instances=50)
+        query_idxs, query_insts = learner.query(data['X_val'], n_instances=200)
 
         # Get global performance
         performance = learner.score(data['X_test'], data['y_test'])
