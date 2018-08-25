@@ -2,4 +2,8 @@
 /data
 hacking_180824/data/
 hacking_180824/log/
+*_raw.md
+
+**/__pychache__/*
+*.pyc
 
