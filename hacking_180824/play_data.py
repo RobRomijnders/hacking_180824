@@ -70,8 +70,8 @@ def load_mnist():
     data['X_train'] = images[biased_samples]
     data['y_train'] = labels[biased_samples]
 
-    data['X_val'] = images[np.delete(np.arange(N), biased_samples)]
-    data['y_val'] = labels[np.delete(np.arange(N), biased_samples)]
+    data['X_pool'] = images[np.delete(np.arange(N), biased_samples)]
+    data['y_pool'] = labels[np.delete(np.arange(N), biased_samples)]
 
     # test data
     images, labels = mndata.load_testing()
@@ -81,13 +81,15 @@ def load_mnist():
     data['X_test'] = images
     data['y_test'] = labels
 
-    logger.debug(f'train set {data["X_train"].shape[0]} - val set {data["X_val"].shape[0]} - test set {data["X_test"].shape[0]}')
+    logger.debug(f'train set {data["X_train"].shape[0]} - '
+                 f'val set {data["X_pool"].shape[0]} - '
+                 f'test set {data["X_test"].shape[0]}')
     return data
 
 
 def delete_idx(data, queries):
-    data['X_val'] = np.delete(data['X_val'], queries, axis=0)
-    data['y_val'] = np.delete(data['y_val'], queries, axis=0)
+    data['X_pool'] = np.delete(data['X_pool'], queries, axis=0)
+    data['y_pool'] = np.delete(data['y_pool'], queries, axis=0)
 
 
 def main():
@@ -100,26 +102,33 @@ def main():
     # simple use sklearn estimators
     estimator = LogisticRegression(n_jobs=8, tol=1E-3)
     # estimator = MLPClassifier(hidden_layer_sizes=(30,), activation='tanh')
+
+    # Set up the learner. This object will maintain the data
+    # and decide which points to query according to query_strategy
     learner = ActiveLearner(
         estimator=estimator,
         X_training=data['X_train'], y_training=data['y_train'],
-        query_strategy=jetze_sampler
+        query_strategy=margin_sampling
     )
 
     # Tell here what the name of your policy is
-    logger.debug('policyname --- jetze_sampler_4')
+    # We will use this for plotting in `plotting/main_plot.py`
+    logger.debug('policyname --- margin_sampling')
 
     num_steps = 20  # Number of steps in the active learning  loop
     t1 = time.time()
     for num_step in range(num_steps):
         # query for labels
-        query_idxs, query_insts = learner.query(data['X_val'], n_instances=20)
+        # Finds the n_instances most informative point in the data provided by calling
+        #         the query_strategy function. Returns the queried instances and its indices.
+        query_idxs, query_insts = learner.query(data['X_pool'], n_instances=20)
 
         # Get global performance
+        # This follows the SKlearn interface for scoring
         performance = learner.score(data['X_test'], data['y_test'])
         logger.debug(f'--- STEP {num_step:5.0f} ---'
               f'PERFORMANCE {performance:8.3f} ---'
-              f'and {data["X_val"].shape} samples left in pool'
+              f'and {data["X_pool"].shape} samples left in pool'
               f'in {time.time() - t1:8.5f} seconds')
 
         # Log global performance
@@ -129,20 +138,21 @@ def main():
         # Get per class performance
         y_test_pred = learner.predict(data['X_test'])
         C = confusion_matrix(data['y_test'], y_test_pred)
+        #    sum over the axis=0 in the following line to know the accuracy per true class
         per_class_accuracy = np.diag(C) / (np.sum(C, axis=0) + 1E-9)  # Add small number to avoid numerical error
 
         # Log the per class performance
         logger.info(f'PERCLASS ---{num_step:10.0f}--- ' + '--'.join((f'{float(p):.3f}' for p in per_class_accuracy)))
 
         # Get the per class counts
-        counts = [np.sum(data['y_val'][query_idxs] == num) for num in range(10)]
+        counts = [np.sum(data['y_pool'][query_idxs] == num) for num in range(10)]
         counts_cum += np.array(counts)
 
         # Log the per class counts
         logger.info(f'COUNTS ---{num_step:10.0f}---' + '--'.join([str(int(c)) for c in counts_cum]))
 
         # Teach the learner with new labels
-        learner.teach(data['X_val'][query_idxs], data['y_val'][query_idxs])
+        learner.teach(data['X_pool'][query_idxs], data['y_pool'][query_idxs])
 
         # Delete the queried data as they are ingested already by the learner
         delete_idx(data, query_idxs)

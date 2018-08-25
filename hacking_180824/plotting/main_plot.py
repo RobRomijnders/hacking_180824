@@ -2,11 +2,10 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 
-f, axarr = plt.subplots(2, 2)
+f1 = plt.figure()
 colors = ['r', 'b', 'm', 'y', 'k', 'g', 'r']
 
 # Another set of sublots for the per class counts and accuracies
-f_c, axarr_c = plt.subplots(1, 10)
 
 for num_file, filename in enumerate(glob('log/*.log')):
     performances = []
@@ -43,21 +42,39 @@ for num_file, filename in enumerate(glob('log/*.log')):
     counts_total = np.array(counts_total)
 
     # Lots of pyplot magic
-    axarr[0, 0].plot(performances[:, 0], performances[:, 1], label=policy_name, c=colors[num_file])
-    axarr[0, 0].set_xlabel('time')
-    axarr[0, 0].set_ylabel('performance')
-    axarr[0, 1].plot(perclass_performances[:, 0], perclass_performances[:, 1:], c=colors[num_file], label=policy_name)
-axarr[0, 0].legend()
-axarr[0, 1].legend()
+    plt.plot(performances[:, 0], performances[:, 1], label=policy_name, c=colors[num_file])
+    plt.xlabel('time')
+    plt.ylabel('performance')
+plt.legend()
+
+
+f_c, axarr_c = plt.subplots(1, 10)
 
 largest_count = np.max(counts_total)
 print(largest_count)
 for num, ax in enumerate(axarr_c):
-    ax.plot(counts_total[:, 0], counts_total[:, num + 1], c='r')
+    ax.plot(counts_total[:, 0], counts_total[:, num + 1], c='r', label='Total counts')
     ax.set_ylim([0, largest_count])
 
-    ax.plot(perclass_performances[:, 0], largest_count * perclass_performances[:, num + 1], c='b')
+    ax.plot(perclass_performances[:, 0], largest_count * perclass_performances[:, num + 1], c='b', label='Performance')
 
+    ax.set_title(f'MNIST digit {num}')
+
+    if num == 0:
+        ax.set_ylabel('Cumulative counts in training data', color='r')
+
+    if num > 0:
+        ax.get_yaxis().set_ticklabels([])
+        ax.get_xaxis().set_ticklabels([])
+
+    if num == len(axarr_c) - 1:
+        ax.legend()
+        ax2 = ax.twinx()
+        ax2.set_ylabel('Performance', color='b')
+        ax2.tick_params('y', colors='b')
+plt.suptitle('Compare the cumulative counts and the accuracy per MNIST digit \n '
+             'In this experiment, the initial training data only contains MNIST digits below 4\n '
+             'Policy name is ' + policy_name)
 
 plt.show()
 
