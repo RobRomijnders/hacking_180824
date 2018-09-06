@@ -1,0 +1,6 @@
+python-mnist
+modAL
+numpy
+matplotlib
+sklearn
+Edward
